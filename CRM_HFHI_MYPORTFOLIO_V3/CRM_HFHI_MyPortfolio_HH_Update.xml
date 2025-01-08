@@ -1,0 +1,168 @@
+﻿<DataListSpec 
+	xmlns="bb_appfx_datalist"
+	xmlns:c="bb_appfx_commontypes" 
+	ID="c69e8c84-9224-47ac-b296-2efa470cfa0c" 
+	Name="CRM HFHI MyPortfolio HH Update Data List"
+	Description="A data list showing crm hfhi myportfolio hh update records." 
+	Author="HFHCON-DEV\twillis"
+	c:SecurityUIFolder="CRM HFHI MyPortfolio HH Update"
+	>
+
+	<!-- define the SP that returns the data for the datalist -->
+	<SPDataList SPName="USR_USP_DATALIST_CRM_HFHI_MYPORTFOLIO_HH_UPDATE">
+		<c:CreateProcedureSQL>
+			<![CDATA[
+create procedure dbo.USR_USP_DATALIST_CRM_HFHI_MYPORTFOLIO_HH_UPDATE
+(
+    @CONTEXTRECORDID uniqueidentifier,
+    @PROSPECTSTATUS nvarchar(100) = null,
+    @NAME nvarchar(154) = null,
+    @CITY nvarchar(50) = null,
+    @STATE nvarchar(100) = null,
+    @CORPORATEINDUSTRYTYPE nvarchar(100) = null,
+    @CURRENTAPPUSERID uniqueidentifier,
+    @SECURITYFEATUREID uniqueidentifier,
+    @SECURITYFEATURETYPE tinyint,
+    @MAXROWS int = 100000) as
+set nocount on;
+set @NAME = dbo.UFN_SEARCHCRITERIA_GETLIKEPARAMETERVALUE2(@NAME, 0, null, 0);
+set @CITY = dbo.UFN_SEARCHCRITERIA_GETLIKEPARAMETERVALUE2(@CITY, 0, null, 0);
+   
+declare @SDL_B46D36D1_D3ED_4F6E_91DA_89B6C88CA0C6 table ([VALUE] uniqueidentifier, 
+    [LABEL] nvarchar(100));
+   
+insert into @SDL_B46D36D1_D3ED_4F6E_91DA_89B6C88CA0C6 exec [dbo].[USP_SIMPLEDATALIST_STATE];
+if (@STATE = '')
+set @STATE = null;
+   
+with
+[ROOT_CTE] as (
+select  distinct    [V_QUERY_CONSTITUENT].[LOOKUPID] as [Lookup ID],
+    [V_QUERY_CONSTITUENT\Prospect].[PROSPECTSTATUSCODE] as [Prospect status],
+    [V_QUERY_CONSTITUENT].[NAME] as [Name],
+    [V_QUERY_CONSTITUENT].[KEYNAME] + case when [V_QUERY_CONSTITUENT].[FIRSTNAME] =  '' then '' else ', ' + [V_QUERY_CONSTITUENT].[FIRSTNAME]  End as NameField,
+    [V_QUERY_CONSTITUENT\Households Belonging To\Household Constituent].[NAME] as [Household],
+	[V_QUERY_CONSTITUENT\Address (Primary)].[ADDRESSBLOCK] as [Address],
+    [V_QUERY_CONSTITUENT\Address (Primary)].[CITY] as [City],
+    [V_QUERY_CONSTITUENT\Address (Primary)].[STATEID_TRANSLATION] as [State],
+    [V_QUERY_CONSTITUENT\Address (Primary)].[POSTCODE] as [ZIP],
+    [V_QUERY_CONSTITUENT\Address (Primary)].[COUNTRYID_TRANSLATION] as [Country],
+    [V_QUERY_CONSTITUENT\Phones].[NUMBER] as [Primary phone],
+    [V_QUERY_CONSTITUENT\Email Addresses].[EMAILADDRESS] as [Primary email],
+    count([V_QUERY_CONSTITUENT\Prospect\Prospect Plans].[ID]) as [Total # of Plans],
+    [V_QUERY_CONSTITUENT\Prospect\Prospect Manager].[ID] as [Prospect Manager ID],
+    [V_QUERY_CONSTITUENT].[ID] as [Prospect ID],
+    [V_QUERY_CONSTITUENT\IMOE Smartfields].[LAST_HFHI_RECEIPT_GIFT_DATE] as [Last Transaction Date],
+    [V_QUERY_CONSTITUENT\IMOE Smartfields].[LAST_HFHI_RECEIPT_AMOUNT] as [Last Transaction Amount],
+    [V_QUERY_CONSTITUENT\Corporate Industry Attribute].[VALUE] as [Corporate industry type],
+    [V_QUERY_CONSTITUENT\Prospect].[FLAGGEDBY] as [Flagged by],
+    [V_QUERY_CONSTITUENT].[ID] as [QUERYRECID]
+from [dbo].[V_QUERY_CONSTITUENT] as [V_QUERY_CONSTITUENT]
+inner join [dbo].[V_QUERY_PROSPECT] as [V_QUERY_CONSTITUENT\PROSPECT] on [V_QUERY_CONSTITUENT].[ID] = [V_QUERY_CONSTITUENT\PROSPECT].[ID] and [v_query_constituent\prospect].[PROSPECTMANAGERFUNDRAISERID] = @CONTEXTRECORDID 
+and [V_QUERY_CONSTITUENT\PROSPECT].[PROSPECTMANAGERENDDATE] is null
+left outer join [V_QUERY_REVENUERECOGNITION] ON [V_QUERY_CONSTITUENT].[ID] = [V_QUERY_REVENUERECOGNITION].[CONSTITUENTID] and [V_QUERY_REVENUERECOGNITION].[EFFECTIVEDATE] >= [V_QUERY_CONSTITUENT\Prospect].[PROSPECTMANAGERSTARTDATE]
+left outer join [dbo].[V_QUERY_HOUSEHOLDMEMBERSHIP] as [V_QUERY_CONSTITUENT\Households Belonging To] on [V_QUERY_CONSTITUENT].[ID] = [V_QUERY_CONSTITUENT\Households Belonging To].[MEMBERID]
+left outer join [dbo].[V_QUERY_CONSTITUENT] as [V_QUERY_CONSTITUENT\Households Belonging To\Household Constituent] on [V_QUERY_CONSTITUENT\Households Belonging To].[GROUPID] = [V_QUERY_CONSTITUENT\Households Belonging To\Household Constituent].[ID]
+left outer join [dbo].[V_QUERY_CONSTITUENTPRIMARYADDRESS] as [V_QUERY_CONSTITUENT\Address (Primary)] on [V_QUERY_CONSTITUENT].[ID] = [V_QUERY_CONSTITUENT\Address (Primary)].[CONSTITUENTID]
+left outer join [dbo].[V_QUERY_CONSTITUENTPHONE] as [V_QUERY_CONSTITUENT\Phones] on [V_QUERY_CONSTITUENT].[ID] = [V_QUERY_CONSTITUENT\Phones].[CONSTITUENTID]
+left outer join [dbo].[V_QUERY_CONSTITUENTEMAILADDRESS] as [V_QUERY_CONSTITUENT\Email Addresses] on [V_QUERY_CONSTITUENT].[ID] = [V_QUERY_CONSTITUENT\Email Addresses].[CONSTITUENTID]
+left outer join [dbo].[V_QUERY_PROSPECTPLAN] as [V_QUERY_CONSTITUENT\Prospect\Prospect Plans] on [V_QUERY_CONSTITUENT\Prospect].[ID] = [V_QUERY_CONSTITUENT\Prospect\Prospect Plans].[PROSPECTID]
+left outer join [dbo].[V_QUERY_FUNDRAISER] as [V_QUERY_CONSTITUENT\Prospect\Prospect Manager] on [V_QUERY_CONSTITUENT\Prospect].[PROSPECTMANAGERFUNDRAISERID] = [V_QUERY_CONSTITUENT\Prospect\Prospect Manager].[ID]
+left outer join [dbo].[USR_V_IMOE_SF_EXPORT_VIEW] as [V_QUERY_CONSTITUENT\IMOE Smartfields] on [V_QUERY_CONSTITUENT].[LOOKUPID] = [V_QUERY_CONSTITUENT\IMOE Smartfields].[CONSTITUENTLOOKUPID]
+left outer join [dbo].[V_QUERY_ATTRIBUTE70E9D8753D0D4D788C4BE61E2DDF3E2A] as [V_QUERY_CONSTITUENT\Corporate Industry Attribute] on [V_QUERY_CONSTITUENT].[ID] = [V_QUERY_CONSTITUENT\Corporate Industry Attribute].[ID]
+left outer join [dbo].[USR_V_QUERY_RCGSUMMARYGIVING] as [V_QUERY_CONSTITUENT\RCG Summary Giving] on [V_QUERY_CONSTITUENT].[ID] = [V_QUERY_CONSTITUENT\RCG Summary Giving].[ID]
+where  (([V_QUERY_CONSTITUENT\Prospect].[PROSPECTSTATUSCODEID] not in (N'46fb9b4a-6fbe-4d20-87ba-bc84412a7132', N'1f3fa8c0-f404-4abe-bf56-30ebe241426d')) or [V_QUERY_CONSTITUENT\Prospect].[PROSPECTSTATUSCODEID] is null)
+and ([V_QUERY_CONSTITUENT\PROSPECT].[PROSPECTMANAGERENDDATE] is null)
+ and ([V_QUERY_CONSTITUENT\Phones].[ISPRIMARY] = 1
+ or ([V_QUERY_CONSTITUENT\Phones].[NUMBER] is null or [V_QUERY_CONSTITUENT\Phones].[NUMBER] = ''))
+ and (([V_QUERY_CONSTITUENT\Email Addresses].[EMAILADDRESS] is null or [V_QUERY_CONSTITUENT\Email Addresses].[EMAILADDRESS] = '')
+ or [V_QUERY_CONSTITUENT\Email Addresses].[ISPRIMARY] = 1)
+ 
+ 
+group by [V_QUERY_CONSTITUENT].[LOOKUPID], [V_QUERY_CONSTITUENT\Prospect].[PROSPECTSTATUSCODE], [V_QUERY_CONSTITUENT].[NAME], [V_QUERY_CONSTITUENT].[KEYNAME],[V_QUERY_CONSTITUENT].[FIRSTNAME],[V_QUERY_CONSTITUENT\Households Belonging To\Household Constituent].[NAME], [V_QUERY_CONSTITUENT\Address (Primary)].[ADDRESSBLOCK], [V_QUERY_CONSTITUENT\Address (Primary)].[CITY], [V_QUERY_CONSTITUENT\Address (Primary)].[STATEID_TRANSLATION], [V_QUERY_CONSTITUENT\Address (Primary)].[POSTCODE], [V_QUERY_CONSTITUENT\Address (Primary)].[COUNTRYID_TRANSLATION], [V_QUERY_CONSTITUENT\Phones].[NUMBER], [V_QUERY_CONSTITUENT\Email Addresses].[EMAILADDRESS], [V_QUERY_CONSTITUENT\Prospect\Prospect Manager].[ID], [V_QUERY_CONSTITUENT].[ID], [V_QUERY_CONSTITUENT\IMOE Smartfields].[LAST_HFHI_RECEIPT_GIFT_DATE], [V_QUERY_CONSTITUENT\IMOE Smartfields].[LAST_HFHI_RECEIPT_AMOUNT], [V_QUERY_CONSTITUENT\Corporate Industry Attribute].[VALUE], [V_QUERY_CONSTITUENT\Prospect].[FLAGGEDBY]
+   
+  )
+   
+   
+select top(@MAXROWS) [Lookup ID],
+    [Prospect status],
+    [Name],
+    NameField,
+	[Household],
+    [Address],
+    [City],
+    [State],
+    [ZIP],
+    [Country],
+    [Primary phone],
+    [Primary email],
+    [Total # of Plans],
+    [Prospect Manager ID],
+    [Prospect ID],
+    [Corporate industry type],
+    [Flagged by]
+ 
+from [ROOT_CTE] as QUERYRESULTS
+where ((@PROSPECTSTATUS is null or @PROSPECTSTATUS = '') 
+or QUERYRESULTS.[Prospect status] <> (select top(1) DESCRIPTION from dbo.[PROSPECTSTATUSCODE] where ID = @PROSPECTSTATUS))
+    and ((@NAME is null or @NAME = '') or QUERYRESULTS.[Name] LIKE  '%' + @NAME + '%')
+    and ((@CITY is null or @CITY = '') or QUERYRESULTS.[City] LIKE  '%' + @CITY + '%')
+    and ((@STATE is null or @STATE = '') or QUERYRESULTS.[State] = (select top(1) [LABEL] from @SDL_B46D36D1_D3ED_4F6E_91DA_89B6C88CA0C6 where [VALUE] = @STATE))
+    and ((@CORPORATEINDUSTRYTYPE is null or @CORPORATEINDUSTRYTYPE = '') or QUERYRESULTS.[Corporate industry type] = (select top(1) DESCRIPTION from dbo.[CORPINDUSTRYCODE] where ID = @CORPORATEINDUSTRYTYPE))
+    and QUERYRESULTS.[Prospect Manager ID] = @CONTEXTRECORDID
+order by [Name] asc
+
+			]]>
+</c:CreateProcedureSQL>
+</SPDataList>
+<Context ContextRecordType="Constituent" RecordIDParameter="CONTEXTRECORDID" />
+<SiteSecurity TableName="SITE" ColumnName="ID" />
+<Parameters>
+<FormMetaData xmlns="bb_appfx_commontypes">
+<FormFields>
+	<FormField FieldID="PROSPECTSTATUS" MaxLength="100" Caption="Prospect status not equal to">
+		<CodeTable CodeTableName="PROSPECTSTATUSCODE" IncludeInactive="true" />
+	</FormField>
+	<FormField FieldID="NAME" MaxLength="154" Caption="Name equal to" />
+	<FormField FieldID="CITY" MaxLength="50" Caption="City equal to" />
+	<FormField FieldID="STATE" MaxLength="100" Caption="State equal to">
+		<SimpleDataList SimpleDataListID="b46d36d1-d3ed-4f6e-91da-89b6c88ca0c6">
+			<Params>
+				<Param ID="INCLUDEINACTIVE">
+					<Value>1</Value>
+				</Param>
+				<Param ID="USEDEFAULTCOUNTRY">
+					<Value>0</Value>
+				</Param>
+			</Params>
+		</SimpleDataList>
+	</FormField>
+	<FormField FieldID="CORPORATEINDUSTRYTYPE" MaxLength="100" Caption="Corporate industry type equal to">
+		<CodeTable CodeTableName="CORPINDUSTRYCODE" IncludeInactive="true" />
+	</FormField>
+</FormFields>
+</FormMetaData>
+</Parameters>
+<Output>
+<OutputFields>
+<OutputField FieldID="Lookup ID" Caption="Lookup ID" DataType="String" />
+<OutputField FieldID="Prospect status" Caption="Prospect status" DataType="String" />
+<OutputField FieldID="Name" Caption="Name" DataType="String" />
+<OutputField FieldID="NameField" Caption="Last Name, First Name" DataType="String" />
+<OutputField FieldID="Household" Caption="Household Name" DataType="String" />
+<OutputField FieldID="Address" Caption="Address" DataType="String" />
+<OutputField FieldID="City" Caption="City" DataType="String" />
+<OutputField FieldID="State" Caption="State" DataType="String" />
+<OutputField FieldID="ZIP" Caption="ZIP" DataType="String" />
+<OutputField FieldID="Country" Caption="Country" DataType="String" />
+<OutputField FieldID="Primary phone" Caption="Primary phone" DataType="String" />
+<OutputField FieldID="Primary email" Caption="Primary email" DataType="EmailAddress" />
+<OutputField FieldID="Total # of Plans" Caption="Total # of Plans" DataType="Integer" />
+<OutputField FieldID="Prospect Manager ID" Caption="Prospect Manager ID" IsHidden="true" DataType="Guid" />
+<OutputField FieldID="Prospect ID" Caption="Prospect ID" IsHidden="true" DataType="Guid" />
+<OutputField FieldID="Corporate industry type" Caption="Corporate industry type" DataType="String" />
+<OutputField FieldID="Flagged by" Caption="Flagged by" DataType="String" />
+</OutputFields>
+</Output>
+
+</DataListSpec>
