@@ -49,7 +49,7 @@ select  distinct    [V_QUERY_CONSTITUENT].[LOOKUPID] as [Lookup ID],
     [V_QUERY_CONSTITUENT\Address (Primary)].[COUNTRYID_TRANSLATION] as [Country],
     [V_QUERY_CONSTITUENT\Phones].[NUMBER] as [Primary phone],
     [V_QUERY_CONSTITUENT\Email Addresses].[EMAILADDRESS] as [Primary email],
-    count([V_QUERY_CONSTITUENT\Prospect\Prospect Plans].[ID]) as [Total # of Plans],
+    count(distinct [V_QUERY_CONSTITUENT\Prospect\Prospect Plans].[ID]) as [Total # of Plans],
     [V_QUERY_CONSTITUENT\Prospect\Prospect Manager].[ID] as [Prospect Manager ID],
     [V_QUERY_CONSTITUENT].[ID] as [Prospect ID],
     [V_QUERY_CONSTITUENT\IMOE Smartfields].[LAST_HFHI_RECEIPT_GIFT_DATE] as [Last Transaction Date],
@@ -75,6 +75,7 @@ left outer join [dbo].[V_QUERY_CONSTITUENTPRIMARYADDRESS] as [V_QUERY_CONSTITUEN
 left outer join [dbo].[V_QUERY_CONSTITUENTPHONE] as [V_QUERY_CONSTITUENT\Phones] on [V_QUERY_CONSTITUENT].[ID] = [V_QUERY_CONSTITUENT\Phones].[CONSTITUENTID]
 left outer join [dbo].[V_QUERY_CONSTITUENTEMAILADDRESS] as [V_QUERY_CONSTITUENT\Email Addresses] on [V_QUERY_CONSTITUENT].[ID] = [V_QUERY_CONSTITUENT\Email Addresses].[CONSTITUENTID]
 left outer join [dbo].[V_QUERY_PROSPECTPLAN] as [V_QUERY_CONSTITUENT\Prospect\Prospect Plans] on [V_QUERY_CONSTITUENT\Prospect].[ID] = [V_QUERY_CONSTITUENT\Prospect\Prospect Plans].[PROSPECTID]
+    and [V_QUERY_CONSTITUENT\Prospect\Prospect Plans].[HISTORICAL] = 0
 left outer join [dbo].[V_QUERY_FUNDRAISER] as [V_QUERY_CONSTITUENT\Prospect\Prospect Manager] on [V_QUERY_CONSTITUENT\Prospect].[PROSPECTMANAGERFUNDRAISERID] = [V_QUERY_CONSTITUENT\Prospect\Prospect Manager].[ID]
 left outer join [dbo].[USR_V_IMOE_SF_EXPORT_VIEW] as [V_QUERY_CONSTITUENT\IMOE Smartfields] on [V_QUERY_CONSTITUENT].[LOOKUPID] = [V_QUERY_CONSTITUENT\IMOE Smartfields].[CONSTITUENTLOOKUPID]
 left outer join [dbo].[V_QUERY_ATTRIBUTE70E9D8753D0D4D788C4BE61E2DDF3E2A] as [V_QUERY_CONSTITUENT\Corporate Industry Attribute] on [V_QUERY_CONSTITUENT].[ID] = [V_QUERY_CONSTITUENT\Corporate Industry Attribute].[ID]
